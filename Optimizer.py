@@ -1,5 +1,5 @@
 import torch.optim as optim
-from Config import OptimHParams
+from HyperParam_Classes import OptimHParams
 
 
 class HybridOptim():
