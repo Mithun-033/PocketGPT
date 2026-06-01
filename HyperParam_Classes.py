@@ -2,12 +2,13 @@ from dataclasses import dataclass
 
 @dataclass 
 class Config:
+    cwl : int = 512
     d_model : int = 768
     num_layers : int = 16
     head_size : int = 64
     num_heads : int = 12
     hidden : int = d_model*4
-    vocab_size : int = ...
+    vocab_size : int = 32_784
 
 @dataclass 
 class OptimHParams:

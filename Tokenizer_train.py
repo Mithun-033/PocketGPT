@@ -4,7 +4,7 @@ from tokenizers.trainers import BpeTrainer
 from tokenizers.pre_tokenizers import Whitespace
 import os
 
-ROOT_DIR="data"
+DATA_DIR="data"
 TOK_DIR="tokenizers"
 
 def tokenizer_16k():
@@ -20,9 +20,9 @@ def tokenizer_16k():
     )
     tok.train(
         files=[
-            os.path.join(ROOT_DIR,"climbmix.txt"),
-            os.path.join(ROOT_DIR,"mine_q_a.txt"),
-            os.path.join(ROOT_DIR,"mine_wiki.txt")
+            os.path.join(DATA_DIR,"climbmix.txt"),
+            os.path.join(DATA_DIR,"mine_q_a.txt"),
+            os.path.join(DATA_DIR,"mine_wiki.txt")
         ],
         trainer=trainer
     )
@@ -41,9 +41,9 @@ def tokenizer_32k():
     )
     tok.train(
         files=[
-            os.path.join(ROOT_DIR,"climbmix.txt"),
-            os.path.join(ROOT_DIR,"mine_q_a.txt"),
-            os.path.join(ROOT_DIR,"mine_wiki.txt")
+            os.path.join(DATA_DIR,"climbmix.txt"),
+            os.path.join(DATA_DIR,"mine_q_a.txt"),
+            os.path.join(DATA_DIR,"mine_wiki.txt")
         ],
         trainer=trainer
     )
@@ -54,6 +54,8 @@ if __name__=="__main__":
 
     print("Training Tokenizer with vocab size 16k...")
     tokenizer_16k()
+
+    print("------------------------------------------------------------------------------")
 
     print("Training Tokenizer with vocab size 32k...")
     tokenizer_32k()

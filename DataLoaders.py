@@ -1,5 +1,4 @@
 from torch.utils.data import DataLoader, Dataset
-import lightning.pytorch as pl
 from lightning.pytorch import LightningDataModule
 import os
 import numpy as np
@@ -21,7 +20,9 @@ class TokenisedDataset(Dataset):
     
     def __getitem__(self,idx):
         '''Returns the input-output pair'''
-        return self.data[idx]
+        x=self.data[idx][:-1]
+        y=self.data[idx][1:]
+        return x,y
     
 
 class DataModule(LightningDataModule):
@@ -36,7 +37,7 @@ class DataModule(LightningDataModule):
             train_val_split (int): The value split number
             num_workers (int): Number of multiprocessing units for DataLoaders
             pin_memory (bool): Pins memory to a specified RAM section (Increased performance at increased RAM memory usage)
-            persistent_workers (bool): Keeps the process active, prevent reintialisation every batch
+            persistent_workers (bool): Keeps the process active, prevents reintialisation of processes every batch
             batch_size (int): Batch size of DataLoader
             prefetch_factor (int): Number of batches each process fetches.
         '''
@@ -49,7 +50,7 @@ class DataModule(LightningDataModule):
 
         self.num_workers=num_workers
         self.pin_memory=pin_memory
-        self.persistance=persistent_workers
+        self.persistant_workers=persistent_workers
         self.batch_size=batch_size
         self.prefetch_factor=prefetch_factor
         self.split=train_val_split
@@ -60,8 +61,9 @@ class DataModule(LightningDataModule):
 
     def setup(self):
         ''' Setup train and val dataset using predefined class module'''
-        self.train_dataset=TokenisedDataset(self.data[:self.split])
-        self.val_dataset=TokenisedDataset(self.data[self.split:])
+        split_val=len(self.data)*self.split
+        self.train_dataset=TokenisedDataset(self.data[:split_val])
+        self.val_dataset=TokenisedDataset(self.data[split_val:])
 
     def train_dataloader(self):
         ''' Returns Train Dataloader'''
@@ -70,7 +72,7 @@ class DataModule(LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             prefetch_factor=self.prefetch_factor,
-            persistent_workers=self.persistance,
+            persistent_workers=self.persistant_workers,
             pin_memory=self.pin_memory,
             shuffle=True
         )
@@ -82,7 +84,7 @@ class DataModule(LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             prefetch_factor=self.prefetch_factor,
-            persistent_workers=self.persistance,
+            persistent_workers=self.persistant_workers,
             pin_memory=self.pin_memory,
             shuffle=False
         )

@@ -1,3 +1,4 @@
+import math
 import torch.optim as optim
 from HyperParam_Classes import OptimHParams
 
@@ -65,7 +66,6 @@ class HybridOptim():
         print(f'AdamW Param Count :{len(self.AdamW)}')
         print(f'Muon Param Count :{len(self.Muon)} ')
         print("-------------------------------------")
-         
 
     def zero_grad(self) -> None:
         ''' Clears the Gradient of previous epoch'''
@@ -78,6 +78,51 @@ class HybridOptim():
 
         self.opt1.step()
         self.opt2.step()
+
+class Hybrid_Optim_with_Cosine_Scheduler():
+    ''' Class module for a hybrid optimizer with a cosine annealing learning rate scheduler with warmup.'''
+    def __init__(self,model,Optim,OptimHParams,total_steps,warmup_steps):
+        ''' 
+        Initialising the class.
+
+        Args:
+            model (GPT Class Object)
+            Optim (HybridOptim Class)
+            OptimHParams (OptimHParams Dataclass Object)
+            total_steps (int): Total number of training steps (epochs*steps_per_epoch)
+            warmup_steps (int): Number of warmup steps for learning rate scheduler
+        '''
+
+        self.optim=Optim(model)
+        self.inital_lr=OptimHParams.lr
+        self.final_lr=OptimHParams.final_lr
+        self.curr_lr=self.inital_lr
+        self.total_steps=total_steps
+        self.warmup_steps=warmup_steps
+        self.current_step=0
+
+    def step(self):
+        ''' Updates the learning rate according to the cosine annealing schedule and then calls the step function of the optimizer.'''
+        if self.current_step<self.warmup_steps:
+            self.curr_lr=self.inital_lr*self.current_step/self.warmup_steps
+        else:
+            self.curr_lr=self.final_lr+(self.curr_lr-self.final_lr)*((1+math.cos((math.pi*(self.current_step+1))/self.total_steps))/(1+math.cos(math.pi*self.current_step/self.total_steps)))
+                        
+        for param_group in self.optim.opt1.param_groups:
+            param_group["lr"]=self.curr_lr
+        
+        for param_group in self.optim.opt2.param_groups:
+            param_group["lr"]=self.curr_lr
+
+        self.current_step+=1
+        self.optim.step()
+
+    def zero_grad(self):
+        ''' Clears the Gradient of previous batch'''
+        self.optim.zero_grad()
+
+
+
 
 
 
