@@ -95,7 +95,7 @@ def run_training(model,DataModule):
         val_check_interval=10,
         log_every_n_steps=50,
         enable_progress_bar=True,
-        accumulate_grad_batches=TrainParams.grad_steps,
+        accumulate_grad_batches=TrainParams.grad_batches,
         gradient_clip_val=1.0
 
     )

@@ -24,12 +24,17 @@ def climbmix_1bil():
         climbmix_path,
         streaming=True,
         split="train")
+    
     with tqdm(total=target, desc="ClimbMix 1bil", unit="Tokens", mininterval=0.1,miniters=1) as pbar:
         for row in ds:
-            tokenised=tok.encode(row)
+            tokenised=tok.encode(row["text"])
             batch_count=len(tokenised.ids)
-            count+=batch_count+2
 
+            if batch_count>=1022:
+                continue
+            
+            count+=batch_count+2
+            
             pbar.update(batch_count+2)
             lst.extend([tok.bos_token]+tokenised.ids+[tok.eos_token])
 

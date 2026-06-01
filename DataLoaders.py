@@ -2,7 +2,6 @@ from torch.utils.data import DataLoader, Dataset
 from lightning.pytorch import LightningDataModule
 import os
 import numpy as np
-from HyperParam_Classes import Config
 
 class TokenisedDataset(Dataset):
     ''' A Dataset wrapped class module to return tokenized input-output pairs'''

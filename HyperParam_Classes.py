@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 @dataclass 
 class Config:
-    cwl : int = 512
+    cwl : int = 1024
     d_model : int = 768
     num_layers : int = 16
     head_size : int = 64
@@ -20,8 +20,8 @@ class OptimHParams:
 @dataclass
 class TrainParams:
     epochs : int = 1
-    batch_size : int = 16
-    grad_steps : int = int(512/batch_size)
+    batch_size : int = 32
+    grad_batches : int = 512
 
 
     
