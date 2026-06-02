@@ -1,7 +1,7 @@
 # MineGPT
 
 <p align="center">
-  <img src="Repo cover image MineGPT.png">
+  <img src="MineGPT.png">
 </p>
 
 MineGPT is a GPT-style autoregressive language model built from scratch using PyTorch and PyTorch Lightning. The project covers the complete language model development pipeline, including tokenizer training, dataset preparation, model implementation, custom optimization, training infrastructure, and domain-specific continued pretraining.
