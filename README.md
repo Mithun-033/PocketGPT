@@ -24,7 +24,7 @@ The model is pretrained on **1 billion tokens from NVIDIA ClimbMix** and further
 - Query RMSNorm
 - Key RMSNorm
 - ReLU² feed-forward networks
-- Residual branch scaling using \(1/\sqrt{2L}\)
+- DeepSeek style scaled Residual paths [1 / √(2L)]
 - Weight tying between token embeddings and output projection head
 
 ### Optimization
