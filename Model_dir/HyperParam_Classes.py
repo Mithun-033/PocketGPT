@@ -30,6 +30,7 @@ class Config:
     num_heads : int = 12
     hidden : int = d_model*4
     vocab_size : int = 32_786
+    value_embed_rank : int = 16
 
 @dataclass 
 class OptimHParams:
@@ -61,7 +62,7 @@ class TrainParams:
     data loading, and gradient accumulation configuration.
     
     Attributes:
-        epochs (int): Number of training epochs to run
+        epochs (int): Number ofi traning epochs to run
         batch_size (int): Number of samples per training batch
         grad_batches (int): Gradient accumulation batches for effective batch size
         num_workers (int): Number of worker processes for data loading

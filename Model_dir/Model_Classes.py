@@ -91,6 +91,13 @@ class RopeEmbedding(nn.Module):
 #=================================================================================
 #  Multi-Head Attention Block
 #=================================================================================
+def has_ve(num_layers,layer_idx):
+    ''' Function to determine whether to apply VE in a given layer based on the layer index and total number of layers.
+    Args:
+        num_layers (int): Total number of layers in the
+        layer_idx (int): Index of the current layer
+    '''
+    return layer_idx%2== num_layers%2
 
 class MultiHeadAttention(nn.Module):
     ''' Class definition of Multi-Head Attention with RMSNorm, RoPE, 
@@ -116,7 +123,7 @@ class MultiHeadAttention(nn.Module):
     - Implements causal masking for autoregressive generation
     - XSA mechanism normalizes output by aligned vector sum
     '''
-    def __init__(self,config):
+    def __init__(self,config,layer_idx):
         '''
         Initialising the Multi-Head Attention.
 
@@ -150,7 +157,9 @@ class MultiHeadAttention(nn.Module):
         self.n_head = config.num_heads
         self.head_size = config.head_size
 
-    def forward(self,x):
+        self.ve_gate=nn.Linear(config.value_embed_rank,config.num_heads,bias=False) if has_ve(config.num_layers,layer_idx) else None
+
+    def forward(self,x,ve=None):
         ''' 
         Calling the forward pass on the attention layers.
         Args:
@@ -171,6 +180,14 @@ class MultiHeadAttention(nn.Module):
         q=self.q_norm(q)
         k=self.k_norm(k)
 
+        if ve is None:
+            ve = v
+        elif self.ve_gate is not None:
+            gate = 3*torch.sigmoid(
+                self.ve_gate(x[...,:self.config.value_embed_rank])
+            )
+            v = v + gate.unsqueeze(-1)*ve
+
         q,k=self.rope(q,k)
 
         q=q.transpose(1,2)
@@ -183,7 +200,7 @@ class MultiHeadAttention(nn.Module):
 
         out=out.transpose(1,2).reshape(B,T,self.n_head*self.head_size)
 
-        return self.proj(out)
+        return self.proj(out),ve
 
 #=================================================================================
 #  MLP Layer
@@ -270,7 +287,7 @@ class Block(nn.Module):
     - Scaling factor depends on model depth (num_layers) for gradient flow
     - Residual connections help mitigate vanishing gradients in deep networks
     '''
-    def __init__(self,config):
+    def __init__(self,config,layer_idx):
         '''
         Initialising the Block.
 
@@ -278,6 +295,7 @@ class Block(nn.Module):
             config (Config): Configuration object containing:
                 -> d_model (int): Model dimension for all layers
                 -> num_layers (int): Total number of transformer blocks in model
+            layer_idx (int): Index of the current layer
 
         Attributes:
             PreNorm1, PreNorm2 (nn.RMSNorm): Layer normalization before sub-layers
@@ -290,22 +308,23 @@ class Block(nn.Module):
         '''
         super().__init__()
         self.PreNorm1=nn.RMSNorm(config.d_model,eps=1e-5)
-        self.attention=MultiHeadAttention(config)
+        self.attention=MultiHeadAttention(config,layer_idx)
         self.PreNorm2=nn.RMSNorm(config.d_model,eps=1e-5)
         self.Mlp=Mlp(config)
 
         self.scale=1/(math.sqrt(2*config.num_layers))
 
-    def forward(self,x):
+    def forward(self,x,ve):
         ''' Calling the PreNorms, attention and MLP layers on input and scaling the outputs before adding to the residual stream
         Args:
             x (Tensor): Input Tensor of shape (B,T,C)
         Returns:
             Tensor of shape (B,T,C)
         '''
-        x=x+self.scale*self.attention(self.PreNorm1(x))
+        logits,ve=self.attention(self.PreNorm1(x),ve)
+        x=x+self.scale*logits
         x=x+self.scale*self.Mlp(self.PreNorm2(x))
-        return x
+        return x,ve
     
 #=================================================================================
 #  GPT Model
@@ -354,7 +373,7 @@ class GPT(nn.Module):
         super().__init__()
 
         self.embed=nn.Embedding(config.vocab_size,config.d_model)
-        self.blocks=nn.ModuleList([Block(config) for _ in range(config.num_layers)])
+        self.blocks=nn.ModuleList([Block(config,i+1) for i in range(config.num_layers)])
         self.final_norm=nn.RMSNorm(config.d_model,eps=1e-5)
         self.lm_head=nn.Linear(config.d_model,config.vocab_size,bias=False)
 
@@ -380,9 +399,10 @@ class GPT(nn.Module):
         Returns:
             Tensor of shape (B,T,vocab_size)
         '''
-        x=self.embed(x)    # x.shape = (B,T,C)
+        x=self.embed(x) 
+        ve=None   # x.shape = (B,T,C)
         for block in self.blocks:
-            x=block(x)
+            x,ve=block(x,ve)
         x=self.final_norm(x)
         x=self.lm_head(x)
         return x
