@@ -89,7 +89,7 @@ MineGPT/
 │   ├── Model_Classes.py
 │   ├── Optimizer.py
 │   ├── prepare_pretraining_data.py
-│   ├── rough_file.py
+│   ├── smoke_test.py
 │   └── train.py
 │
 ├── tokenizers_dir/
