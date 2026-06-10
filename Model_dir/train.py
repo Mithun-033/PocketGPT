@@ -39,7 +39,7 @@ def get_dataloaders(config,tp,file_path):
     data_module.setup()
     return data_module.train_dataloader(), data_module.val_dataloader()
 
-def get_optimizer(model, tp, op, gp):
+def get_optimizer(model, tp, gp):
     '''Initialises the Hybrid Optimizer with Cosine Scheduler.
 
     Args:
@@ -76,6 +76,7 @@ def train(Model):
     val_dataloader=None
 
     with tqdm(total=2_000_000_000, desc="Training", unit="Tokens") as pbar:
+        opt_steps=0
         for i in range(10):
             file_path=f"Pre_train_data/climbmix_{i+1}.npy"
             if val_dataloader is None:
@@ -85,7 +86,6 @@ def train(Model):
 
             batch_count=0
             loss_sum=0
-            opt_steps=0
             start=time.time()
 
             model.train()
