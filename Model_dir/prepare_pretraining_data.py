@@ -11,7 +11,7 @@ minecraft_path2="minhaozhang/minecraft-question-answer-630k"
 DATA_DIR="Pre_train_data"
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"]="1"
 
-tok=Tokenizer.from_file("MineGPT/tokenizers_dir/tokenizer_32k.json")
+tok=Tokenizer.from_file("tokenizers_dir/tokenizer_32k.json")
 
 #-----------------------------------------------------------------------------------------
 # ClimbMix 2 Billion Tokens Dataset
@@ -122,8 +122,8 @@ if __name__=="__main__":
     os.makedirs(DATA_DIR,exist_ok=True)
     print("Starting Preprocessing...")
 
-    print("Downloading Climbmix...")
-    climbmix_2bil()
+    # print("Downloading Climbmix...")
+    # climbmix_2bil()
 
     print("Downloading Minecraft Wiki...")
     mine_wiki()
