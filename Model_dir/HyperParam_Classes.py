@@ -55,6 +55,22 @@ class OptimHParams:
     lr_decay : float = 0.1
     final_lr : float = lr * lr_decay
 
+@dataclass 
+class OptimHParams_FT:
+    """Optimization hyperparameters for fine-tuning the GPT model.
+    This class is similar to OptimHParams but with a lower learning rate and weight decay suitable for fine-tuning.
+    
+    Attributes:
+        lr (float): Base learning rate for fine-tuning, typically 1e-5 to 5e-5
+        weight_decay (int/float): Weight decay coefficient for fine-tuning
+        lr_decay (float): Decay factor applied to initial learning rate for fine-tuning
+        final_lr (float): Final effective learning rate after decay for fine-tuning
+    """
+    lr : float = 4e-5
+    weight_decay : int = 0.01
+    lr_decay : float = 0.1
+    final_lr : float = lr * lr_decay
+
 @dataclass
 class TrainParams:
     """Training configuration parameters for the GPT model training loop.
