@@ -45,7 +45,7 @@ def finetune(model,epochs=2):
     opt_steps=0
     with tqdm(total=(47509085 + 8026886)*epochs, desc="Fine-tuning", unit="Tokens") as pbar:
         for epoch in range(epochs):
-            file_paths=["Pre_train_data/mine_qa.npy","Pre_train_data/mine_wiki.npy"]
+            file_paths=["../Pre_train_data/mine_qa.npy","../Pre_train_data/mine_wiki.npy"]
 
             for file in file_paths:
                 train_dataloader,val_dataloader=get_dataloaders(gp, tp, file)
