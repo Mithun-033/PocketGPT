@@ -48,13 +48,15 @@ class HybridOptim():
             self.AdamW_params,
             lr=self.config.lr,
             weight_decay=self.config.weight_decay,
-            fused=True if torch.cuda.is_available() else False
+            fused=True if torch.cuda.is_available() else False,
+            betas=(self.config.betas[0],self.config.betas[1]),
         )
         self.opt2=optim.Muon(
             self.Muon_params,
             lr=self.config.lr,
             weight_decay=self.config.weight_decay,
-            adjust_lr_fn="match_rms_adamw"
+            adjust_lr_fn="match_rms_adamw",
+
         )
 
         self.scheduler_adam1=optim.lr_scheduler.LinearLR(
