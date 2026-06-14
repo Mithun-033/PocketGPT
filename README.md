@@ -15,7 +15,7 @@ SharpGPT is pretrained on **6 billion tokens of NVIDIA ClimbMix** and serves as 
 | Architecture | Decoder-only Transformer |
 | Training Tokens | 6 Billion |
 | Context Length | 1,024 |
-| Layers | 18 |
+| Layers | 20 |
 | Hidden Dimension | 1,024 |
 | Attention Heads | 16 |
 | KV Heads | 4 |
@@ -23,10 +23,10 @@ SharpGPT is pretrained on **6 billion tokens of NVIDIA ClimbMix** and serves as 
 | MLP Dimension | 4,096 |
 | Vocabulary Size | 32,786 |
 | Value Embedding Rank | 16 |
-| Backbone Parameters | ~195M |
+| Backbone Parameters | ~224M |
 | Token Embeddings | ~69M |
-| Value Embeddings | ~300M |
-| Total Parameters | ~564M |
+| Value Embeddings | ~330M |
+| Total Parameters | ~623M |
 
 ---
 
@@ -66,7 +66,6 @@ SharpGPT is pretrained on **6 billion tokens of NVIDIA ClimbMix** and serves as 
 ### Tokenization
 
 - Custom tokenizer training pipeline
-- 16K vocabulary tokenizer
 - 32K vocabulary tokenizer
 - Reusable tokenizer artifacts
 
@@ -97,7 +96,6 @@ Project/
 ├── tokenizers_dir/
 │   ├── DataPrep.py
 │   ├── Tokenizer_train.py
-│   ├── tokenizer_16k.json
 │   └── tokenizer_32k.json
 │
 ├── val_loss/
@@ -105,7 +103,6 @@ Project/
 │   ├── val_delta_loss.png
 │   └── val_loss.png
 │
-├── model_architecture.png
 ├── LICENSE
 └── README.md
 ```
@@ -181,21 +178,6 @@ where **L** is the number of Transformer layers.
 
 ---
 
-### 3. Configure Hyperparameters
-
-All model and training configurations are defined in:
-
-```text
-HyperParam_Classes.py
-```
-
-### 4. Start Training
-
-```bash
-python train.py
-```
-
----
 
 ## Available Tokenizers
 
