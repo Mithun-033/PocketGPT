@@ -94,7 +94,7 @@ def train(Model):
             model.train()
 
             for x,y in train_dataloader:
-                x=x.to(device,non_blocking=True)
+                x=x.to(device,non_blocking=True) 
                 y=y.to(device,non_blocking=True)
                 with torch.autocast(device_type="cuda",dtype=torch.bfloat16):
                     out=model(x)
@@ -115,7 +115,19 @@ def train(Model):
 
                 if opt_steps > 0 and opt_steps % 20 == 0 and batch_count == 0:
                     time_taken=time.time()-start
-                    print(f"Loss: {loss_sum/20:.4f}, Time : {time_taken:.2f} seconds, Toks/sec : {(20*tp.grad_batches*gp.cwl)/time_taken:.2f}")
+                    with open("train_log.json","a") as f:                        
+                        json.dump({
+                            "step": opt_steps,
+                            "loss": loss_sum/20,
+                            "toks_per_sec": (20*tp.grad_batches*gp.cwl)/time_taken
+                        },f)                        
+                    f.write("\n")
+
+                    pbar.set_postfix({
+                        "loss": f"{loss_sum/20:.4f}",
+                        "toks/sec": f"{(20*tp.grad_batches*gp.cwl)/time_taken:.2f}"
+                    })
+                    
                     loss_sum=0
                     start=time.time()
 
@@ -142,7 +154,7 @@ def train(Model):
 
                     print(f"Validation Loss: {val_loss_sum/val_batch_count:.4f}")
                     model.train()
-                    with open("training_log.json","a") as f:
+                    with open("val_log.json","a") as f:
                         json.dump({
                             "step": opt_steps,
                             "val_loss": val_loss_sum/val_batch_count
