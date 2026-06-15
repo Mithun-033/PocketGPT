@@ -73,7 +73,7 @@ def train(Model):
     model=Model.to(device)
     model=torch.compile(model).to(device)
 
-    optimizer=get_optimizer(model,tp,op,gp)
+    optimizer=get_optimizer(model,tp,gp)
     loss_fn=nn.CrossEntropyLoss()
 
     val_dataloader=None
