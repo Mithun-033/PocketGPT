@@ -123,7 +123,13 @@ class HybridOptim():
             "Muon":self.Muon.state_dict()
         }
     
-    
+    def load_state_dict(self,state_dict:dict) -> None:
+        ''' Loads the state dict of both optimizers and schedulers'''
+
+        self.opt1.load_state_dict(state_dict["opt1"])
+        self.opt2.load_state_dict(state_dict["opt2"])
+        self.Adamw.load_state_dict(state_dict["Adamw"])
+        self.Muon.load_state_dict(state_dict["Muon"])
 
 
 
