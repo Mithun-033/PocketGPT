@@ -29,7 +29,7 @@ class Config:
     num_heads : int = 16
     kv_heads: int = 4
     hidden : int = d_model*4
-    vocab_size : int = 32_786
+    vocab_size : int = 49_152
     value_embed_rank : int = 16
 
 @dataclass 
