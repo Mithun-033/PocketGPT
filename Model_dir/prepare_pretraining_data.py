@@ -9,7 +9,7 @@ climbmix_path="karpathy/climbmix-400b-shuffle"
 DATA_DIR="Pre_train_data"
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"]="1"
 
-tok=Tokenizer.from_file("tokenizers_dir/tokenizer_32k.json")
+tok=Tokenizer.from_file("tokenizers_dir/tokenizer_49k_whitespace.json")
 
 #-----------------------------------------------------------------------------------------
 # ClimbMix 6 Billion Tokens Dataset
