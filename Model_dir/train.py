@@ -60,6 +60,17 @@ def get_optimizer(model, tp, gp):
     )
     return optimizer
 
+def load_optimizer(optimizer, optimizer_checkpoint_path):
+    '''Loads the optimizer state from a checkpoint file.
+
+    Args:
+        optimizer (HybridOptim): The optimizer instance to load the state into.
+        optimizer_checkpoint_path (str): Path to the optimizer checkpoint file.
+    '''
+    checkpoint = torch.load_state_dict(optimizer_checkpoint_path, map_location=device)
+    optimizer.load_state_dict(checkpoint)
+    return optimizer
+
 def train(Model):
     '''Main training loop for the GPT model.
     This function initializes the model, optimizer, and data loaders, 
@@ -74,14 +85,15 @@ def train(Model):
     model=torch.compile(model).to(device)
 
     optimizer=get_optimizer(model,tp,gp)
+    optimizer=load_optimizer(optimizer,"optimizer_checkpoint.pt")
     loss_fn=nn.CrossEntropyLoss()
 
     val_dataloader=None
 
-    with tqdm(total=6_000_000_000, desc="Training", unit="Tokens") as pbar:
-        opt_steps=0
+    with tqdm(total=2_600_000_000, desc="Training", unit="Tokens") as pbar:
+        opt_steps=torch.load("optimizer_checkpoint.pt",map_location=device)["step"]
         batch_count=0
-        for i in range(15):
+        for i in range(13,26):
             file_path=f"Pre_train_data/climbmix_{i+1}.npy"
             if val_dataloader is None:
                 train_dataloader,val_dataloader=get_dataloaders(gp, tp, file_path)
@@ -118,14 +130,13 @@ def train(Model):
                     with open("train_log.json","a") as f:                        
                         json.dump({
                             "step": opt_steps,
-                            "loss": loss_sum/20,
+                            "train_loss": loss_sum/20,
                             "toks_per_sec": (20*tp.grad_batches*gp.cwl)/time_taken
                         },f)                        
                         f.write("\n")
 
                     pbar.set_postfix({
-                        "loss": f"{loss_sum/20:.4f}",
-                        "toks/sec": f"{(20*tp.grad_batches*gp.cwl)/time_taken:.2f}"
+                        "train_loss": f"{loss_sum/20:.4f}"
                     })
                     
                     loss_sum=0
@@ -135,8 +146,9 @@ def train(Model):
                     val_loss_sum=0
                     val_batch_count=0
                     
-                    torch.save(model.state_dict(),"model_checkpoint.pt")
-                    torch.save({"optimizer_state_dict": optimizer.state_dict(),
+                    if opt_steps % 200 == 0:
+                        torch.save(model.state_dict(),"model_checkpoint.pt")
+                        torch.save({"optimizer_state_dict": optimizer.state_dict(),
                                 "step": opt_steps},"optimizer_checkpoint.pt")
 
                     model.eval()
@@ -150,6 +162,9 @@ def train(Model):
                                 val_loss_sum+=loss.item()
                                 val_batch_count+=1
 
+                    pbar.set_postfix({
+                        "val_loss": f"{val_loss_sum/val_batch_count:.4f}"})
+                    
                     model.train()
                     with open("val_log.json","a") as f:
                         json.dump({
@@ -158,14 +173,27 @@ def train(Model):
                         },f)
                         f.write("\n")
 
-        torch.save(model.state_dict(),"epoch_model.pt")     
-        torch.save({"optimizer_state_dict": optimizer.state_dict(),
-                    "step": opt_steps},"epoch_optimizer.pt")       
+        torch.save(model.state_dict(),"final_model.pt")     
+        
 
 if __name__=="__main__":
-    model=GPT(Config())
-    summary(model,input_size=(1,Config().cwl),dtypes=[torch.long])
-    train(model)
+    # model=GPT(Config())
+    # summary(model,input_size=(1,Config().cwl),dtypes=[torch.long])
+    # train(model)
+
+    state_dict=torch.load("model_checkpoint.pt",map_location=device)
+
+    new_state_dict={}
+
+    for k,v in state_dict.items():
+        if k.startswith("_orig_mod."):
+            k=k[len("_orig_mod."):]
+        new_state_dict[k]=v
+
+    model=GPT(Config()).to(device)
+    model.load_state_dict(new_state_dict)
+
+
 
 
 
