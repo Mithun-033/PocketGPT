@@ -67,7 +67,7 @@ def load_optimizer(optimizer, optimizer_checkpoint_path):
         optimizer (HybridOptim): The optimizer instance to load the state into.
         optimizer_checkpoint_path (str): Path to the optimizer checkpoint file.
     '''
-    checkpoint = torch.load_state_dict(optimizer_checkpoint_path, map_location=device)
+    checkpoint = torch.load_state_dict(optimizer_checkpoint_path, map_location=device)["optimizer_state_dict"]
     optimizer.load_state_dict(checkpoint)
     return optimizer
 
@@ -79,7 +79,6 @@ def train(Model):
     '''
     tp=TrainParams()
     gp=Config()
-    op=OptimHParams()
 
     model=Model.to(device)
     model=torch.compile(model).to(device)
@@ -90,10 +89,10 @@ def train(Model):
 
     val_dataloader=None
 
-    with tqdm(total=2_600_000_000, desc="Training", unit="Tokens") as pbar:
+    with tqdm(total=5_000_000_000, desc="Training", unit="Tokens") as pbar:
         opt_steps=torch.load("optimizer_checkpoint.pt",map_location=device)["step"]
         batch_count=0
-        for i in range(13,26):
+        for i in range(0,25):
             file_path=f"Pre_train_data/climbmix_{i+1}.npy"
             if val_dataloader is None:
                 train_dataloader,val_dataloader=get_dataloaders(gp, tp, file_path)
@@ -165,21 +164,19 @@ def train(Model):
                     pbar.set_postfix({
                         "val_loss": f"{val_loss_sum/val_batch_count:.4f}"})
                     
-                    model.train()
                     with open("val_log.json","a") as f:
                         json.dump({
                             "step": opt_steps,
                             "val_loss": val_loss_sum/val_batch_count
                         },f)
                         f.write("\n")
+                    model.train()
 
         torch.save(model.state_dict(),"final_model.pt")     
         
 
 if __name__=="__main__":
     # model=GPT(Config())
-    # summary(model,input_size=(1,Config().cwl),dtypes=[torch.long])
-    # train(model)
 
     state_dict=torch.load("model_checkpoint.pt",map_location=device)
 
@@ -192,6 +189,9 @@ if __name__=="__main__":
 
     model=GPT(Config()).to(device)
     model.load_state_dict(new_state_dict)
+
+    summary(model,input_size=(1,Config().cwl),dtypes=[torch.long])
+    train(model)
 
 
 
