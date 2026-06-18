@@ -74,6 +74,9 @@ def intruction_finetune():
         split="train",
         )
     
+    it1=iter(ds1)
+    it2=iter(ds2)
+    
     count1=0
     count2=0
 
@@ -84,11 +87,11 @@ def intruction_finetune():
             rand=random.random()*10
 
             if rand>3:
-                row=next(iter(ds1))
+                row=next(it1)
                 tokenised=tok.encode("Human: "+row["question"]+" Assistant: "+row["response"]).ids
 
                 while len(tokenised)<256:
-                    row=next(iter(ds1))
+                    row=next(it1)
                     tokenised=tok.encode("Human: "+row["question"]+" Assistant: "+row["response"]).ids
                 
                 count1+=len(tokenised)
@@ -96,12 +99,13 @@ def intruction_finetune():
                 pbar.update(len(tokenised))
 
             else:
-                row=next(iter(ds2))
+                row=next(it2)
                 tokenised=tok.encode(row["prompt"]+row["chosen"]).ids
 
                 while len(tokenised)<128:
-                    row=next(iter(ds2))
+                    row=next(it2)
                     tokenised=tok.encode(row["prompt"]+row["chosen"]).ids
+
                     
                 count2+=len(tokenised)
 
