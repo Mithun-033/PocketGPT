@@ -1,3 +1,4 @@
+from networkx import config
 import torch
 import torch.nn.functional as F
 from datasets import load_dataset
@@ -11,7 +12,7 @@ import os
 DEVICE="cuda" if torch.cuda.is_available() else "cpu"
 
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"]="1"
-state_dict=torch.load("C:\\Users\\mithu\\Desktop\\Mithun\\MineGPT\\fine_tuned_model_0.pt",map_location=DEVICE)
+state_dict=torch.load("/teamspace/studios/this_studio/fine_tuned_model_0.pt",map_location=DEVICE)
 
 new_state_dict={}
 
@@ -24,9 +25,14 @@ model=GPT(Config()).to(DEVICE)
 model.load_state_dict(new_state_dict)
 
 model.eval()
-tokenizer=Tokenizer.from_file("C:\\Users\\mithu\\Desktop\\Mithun\\MineGPT\\tokenizers_dir\\tokenizer_49k_whitespace.json")
+tokenizer=Tokenizer.from_file("/teamspace/studios/this_studio/PocketGPT/tokenizers_dir/tokenizer_49k_whitespace.json")
 
+torch.set_float32_matmul_precision("high")
 
+model=torch.compile(
+    model,
+    mode="reduce-overhead"
+)
 #####################################################################
 # MODEL INTERFACE
 #####################################################################
@@ -50,17 +56,34 @@ def logprob(context,continuation):
     full_ids=encode(full)
     ctx_ids=encode(context)
 
+    max_len=Config().cwl
+
+    if len(full_ids)>max_len:
+        overflow=len(full_ids)-max_len
+
+        full_ids=full_ids[overflow:]
+
+        if overflow<len(ctx_ids):
+            ctx_ids=ctx_ids[overflow:]
+        else:
+            ctx_ids=[]
+
     logits=get_logits(full_ids)
 
     log_probs=F.log_softmax(logits[:-1],dim=-1)
 
     score=0.0
+    count=0
 
     for i in range(len(ctx_ids),len(full_ids)):
         token=full_ids[i]
         score+=log_probs[i-1,token].item()
+        count+=1
 
-    return score
+    if count==0:
+        return -1e9
+
+    return score/count
 
 
 #####################################################################
@@ -68,13 +91,65 @@ def logprob(context,continuation):
 #####################################################################
 
 
+@torch.no_grad()
 def mcq_score(prompt,choices):
-    scores=[]
+    ctx_ids=encode(prompt)
+
+    seqs=[]
+    choice_ids_list=[]
 
     for choice in choices:
-        scores.append(logprob(prompt," "+choice))
+        choice_ids=encode(" "+choice)
 
-    return max(range(len(scores)),key=lambda i:scores[i])
+        full_ids=ctx_ids+choice_ids
+
+        if len(full_ids)>Config().cwl:
+            full_ids=full_ids[-Config().cwl:]
+
+        seqs.append(full_ids)
+        choice_ids_list.append(choice_ids)
+
+    max_len=max(len(seq) for seq in seqs)
+
+    batch=torch.zeros(
+        (len(seqs),max_len),
+        dtype=torch.long,
+        device=DEVICE
+    )
+
+    for i,seq in enumerate(seqs):
+        batch[i,:len(seq)]=torch.tensor(
+            seq,
+            dtype=torch.long,
+            device=DEVICE
+        )
+
+    logits=model(batch)
+    log_probs=F.log_softmax(logits[:,:-1],dim=-1)
+
+    scores=[]
+
+    for b,choice_ids in enumerate(choice_ids_list):
+        start=len(seqs[b])-len(choice_ids)
+
+        score=0.0
+        count=0
+
+        for j,token in enumerate(choice_ids):
+            pos=start+j
+
+            if pos==0:
+                continue
+
+            score+=log_probs[b,pos-1,token].item()
+            count+=1
+
+        scores.append(score/max(count,1))
+
+    return max(
+        range(len(scores)),
+        key=lambda i:scores[i]
+    )
 
 
 #####################################################################
@@ -83,7 +158,8 @@ def mcq_score(prompt,choices):
 
 
 def eval_hellaswag(limit=None):
-    ds=load_dataset("hellaswag","default",split="validation")
+    # HellaSwag
+    ds=load_dataset("Rowan/hellaswag",split="validation")
 
     correct=0
     total=0
@@ -102,33 +178,6 @@ def eval_hellaswag(limit=None):
     return 100*correct/total
 
 
-#####################################################################
-# PIQA
-#####################################################################
-
-
-def eval_piqa(limit=None):
-    ds=load_dataset("piqa",split="validation")
-
-    correct=0
-    total=0
-
-    for row in tqdm(ds):
-        pred=mcq_score(
-            row["goal"],
-            [row["sol1"],row["sol2"]]
-        )
-
-        if pred==row["label"]:
-            correct+=1
-
-        total+=1
-
-        if limit and total>=limit:
-            break
-
-    return 100*correct/total
-
 
 #####################################################################
 # WINOGRANDE
@@ -137,7 +186,7 @@ def eval_piqa(limit=None):
 
 def eval_winogrande(limit=None):
     ds=load_dataset(
-        "winogrande",
+        "allenai/winogrande",
         "winogrande_xl",
         split="validation"
     )
@@ -146,14 +195,13 @@ def eval_winogrande(limit=None):
     total=0
 
     for row in tqdm(ds):
-        sentence=row["sentence"]
+        scores=[]
 
-        prompt=sentence.replace("_","")
+        for option in [row["option1"],row["option2"]]:
+            completed=row["sentence"].replace("_",option)
+            scores.append(logprob("",completed))
 
-        pred=mcq_score(
-            prompt,
-            [row["option1"],row["option2"]]
-        )
+        pred=max(range(len(scores)),key=lambda i:scores[i])
 
         if pred+1==int(row["answer"]):
             correct+=1
@@ -172,11 +220,8 @@ def eval_winogrande(limit=None):
 
 
 def eval_arc(config,limit=None):
-    ds=load_dataset(
-        "ai2_arc",
-        config,
-        split="test"
-    )
+    # ARC
+    ds=load_dataset("allenai/ai2_arc",config,split="test")
 
     correct=0
     total=0
@@ -206,11 +251,8 @@ def eval_arc(config,limit=None):
 
 
 def eval_openbookqa(limit=None):
-    ds=load_dataset(
-        "openbookqa",
-        "main",
-        split="test"
-    )
+    # OpenBookQA
+    ds=load_dataset("allenai/openbookqa","main",split="test")
 
     correct=0
     total=0
@@ -235,53 +277,12 @@ def eval_openbookqa(limit=None):
 
 
 #####################################################################
-# LAMBADA
-#####################################################################
-
-
-def eval_lambada(limit=None):
-    ds=load_dataset(
-        "lambada",
-        split="test"
-    )
-
-    correct=0
-    total=0
-
-    for row in tqdm(ds):
-        text=row["text"]
-
-        words=text.split()
-
-        context=" ".join(words[:-1])
-        target=words[-1]
-
-        pred_score=logprob(context," "+target)
-
-        random_score=logprob(context," the")
-
-        if pred_score>random_score:
-            correct+=1
-
-        total+=1
-
-        if limit and total>=limit:
-            break
-
-    return 100*correct/total
-
-
-#####################################################################
 # MMLU
 #####################################################################
 
 
 def eval_mmlu(limit=None):
-    ds=load_dataset(
-        "cais/mmlu",
-        "all",
-        split="test"
-    )
+    ds=load_dataset("cais/mmlu","all",split="test")
 
     correct=0
     total=0
@@ -319,23 +320,20 @@ def main():
 
     args=parser.parse_args()
 
+    benchmarks=[
+    ("hellaswag",lambda:eval_hellaswag(args.limit)),
+    ("winogrande",lambda:eval_winogrande(args.limit)),
+    ("arc_easy",lambda:eval_arc("ARC-Easy",args.limit)),
+    ("arc_challenge",lambda:eval_arc("ARC-Challenge",args.limit)),
+    ("openbookqa",lambda:eval_openbookqa(args.limit)),
+    ("mmlu",lambda:eval_mmlu(args.limit)),
+]
+
     results={}
 
-    results["hellaswag"]=eval_hellaswag(args.limit)
-    results["piqa"]=eval_piqa(args.limit)
-    results["winogrande"]=eval_winogrande(args.limit)
-    results["arc_easy"]=eval_arc("ARC-Easy",args.limit)
-    results["arc_challenge"]=eval_arc("ARC-Challenge",args.limit)
-    results["openbookqa"]=eval_openbookqa(args.limit)
-    results["lambada"]=eval_lambada(args.limit)
-    results["mmlu"]=eval_mmlu(args.limit)
-
-    print("\n"+"="*50)
-
-    for k,v in results.items():
-        print(f"{k:20s} {v:.2f}")
-
-    print("="*50)
+    for name,fn in benchmarks:
+        results[name]=fn()
+        print(f"{name:20s} {results[name]:.2f}")
 
 
 if __name__=="__main__":
