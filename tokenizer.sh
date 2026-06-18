@@ -1,13 +1,5 @@
 #!/bin/bash
 
-echo "Downloading torch dependencies..."
-
-pip install tokenizers datasets tqdm json
-
-echo "Dependencies installed successfully."
-
-#-----------------------------------------------------------------------------#
-
 echo "Downloading pre-trained data..."
 
 python tokenizers_dir/DataPrep.py
