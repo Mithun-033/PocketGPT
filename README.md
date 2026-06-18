@@ -11,14 +11,23 @@ PocketGPT is pretrained on **5 billion tokens of NVIDIA ClimbMix** and serves as
 ---
 ## Base Model Benchmark Comparison
 
-| Benchmark | GPT-2 Medium (355M) | Pythia 410M | PocketGPT (325M) |
-|------------|-------------------:|------------:|-----------------:|
-| HellaSwag | **37.52** | ~43 | **37.95** |
-| WinoGrande | ~54 | ~55 | **53.35** |
-| ARC Easy | ~50 | ~55 | **52.86** |
-| ARC Challenge | ~29 | ~31 | **31.40** |
-| OpenBookQA | ~31 | ~34 | **32.80** |
-| MMLU | ~27 | ~30 | **28.24** |
+| Benchmark     | GPT-2 Medium (355M) | Pythia 410M | PocketGPT (325M) |
+|---------------|--------------------:|------------:|-----------------:|
+| HellaSwag     | **37.52**           | **40.9**    | **37.95** |
+| WinoGrande    | **52.5**            | **53.7**    | **53.35** |
+| ARC Easy      | **44.7**            | **52.1**    | **52.86** |
+| ARC Challenge | **20.1**            | **21.3**    | **31.40** |
+| OpenBookQA    | **19.8**            | —           | **32.80** |
+| MMLU          | ~25                 | **27.3**    | **28.24** |
+
+
+> **Source (GPT-2 Medium (355M) :** Wu et al. (2024), *SkipV1Former* ([arXiv:2510.16807](https://arxiv.org/abs/2510.16807)); 
+> Sangale (2026), [Bonsai LLM Evals](https://recsysml.substack.com/p/llm-evals-from-scratch-run-your-first); 
+> aggregated across multiple papers — treat as estimates (±1–2%).
+
+> **Source (Pythia 410M) :** Biderman et al. (2023), *Pythia: A Suite for Analyzing Large Language Models Across Training and Scaling* ([arXiv:2304.01373](https://arxiv.org/abs/2304.01373)), Table G.1 (zero-shot);
+> HellaSwag and MMLU from the Hugging Face Open LLM Leaderboard evaluation run ([dataset](https://huggingface.co/datasets/open-llm-leaderboard/EleutherAI__pythia-410m-details)).
+> OpenBookQA not reported in either source — omitted.
 ---
 
 ## Model Specifications
