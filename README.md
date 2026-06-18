@@ -103,37 +103,33 @@ PocketGPT is pretrained on **5 billion tokens of NVIDIA ClimbMix** and serves as
 
 ```text
 PocketGPT/
-│
-├── Model_dir/
-│   ├── DataLoaders.py
-│   ├── HyperParam_Classes.py
-│   ├── Model_Classes.py
+├── GPT/
+│   ├── Hyperparams.py
+│   ├── Model.py
 │   ├── Optimizer.py
-│   ├── prepare_pretraining_data.py
-│   ├── smoke_test.py
-│   └── train.py
-│
-├── tokenizers_dir/
-│   ├── Compression_ratios.json
+│   ├── inference.py
+│   └── smoke_test.py
+├── scripts/
+│   ├── dependencies.sh
+│   ├── tokenizer.sh
+│   └── train.sh
+├── tokenizer/
 │   ├── DataPrep.py
+│   ├── Tokenizer_train.py
+│   ├── tokenizers_benchmark.py
+│   ├── Compression_ratios.json
 │   ├── tokenizer_32k_ByteLevel.json
 │   ├── tokenizer_32k_whitespace.json
 │   ├── tokenizer_49k_ByteLevel.json
-│   ├── tokenizer_49k_whitespace.json
-│   ├── Tokenizer_train.py
-│   └── tokenizers_benchmark.py
-│
-├── val_loss/
-│   ├── perplexity.png
-│   ├── train_log.json
-│   ├── train_val_loss.png
-│   ├── val_delta.png
-│   └── val_log.json
-│
-├── LICENSE
-├── README.md
-├── tokenizer.sh
-└── train.sh
+│   └── tokenizer_49k_whitespace.json
+├── train/
+│   ├── DataLoaders.py
+│   ├── data.py
+│   ├── eval.py
+│   └── train.py
+├── val_loss (upto 2.3bil toks)/
+├── PocketGPT.png
+└── LICENSE
 ```
 
 ---
