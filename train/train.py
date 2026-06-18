@@ -1,21 +1,48 @@
+import time
+import warnings
+from tqdm import tqdm
 import torch
 import torch.nn as nn
+
+from GPT.Model import GPT
+from GPT.Hyperparams import TrainParams, Config, OptimHParams
+from GPT.Optimizer import HybridOptim
+
+from DataLoaders import DataModule
 from torchinfo import summary
-from Optimizer import HybridOptim
-from Model_Classes import GPT
+import json
 
-from train import get_dataloaders
-from HyperParam_Classes import Config, OptimHParams_FT, TrainParams
-import time
-import json 
-from tqdm import tqdm
-import warnings
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 torch.set_float32_matmul_precision("high")
 warnings.filterwarnings("ignore", category=UserWarning)
 
-def get_optimizer(model, tp, gp, epochs):
+def get_dataloaders(config,tp,file_path):
+    '''Initialises the DataModule and returns the Train and Validation DataLoaders.
+
+    Args:
+        config (Config): Configuration object containing hyperparameters including context window length (cwl).
+        file_path (str): Path to the data file.
+
+    Returns:
+        tuple: A tuple containing (train_dataloader, val_dataloader) where:
+            - train_dataloader (DataLoader): The training data loader.
+            - val_dataloader (DataLoader): The validation data loader.
+    '''
+    data_module = DataModule(
+        file_path=file_path,
+        train_val_split=0.9998,
+        num_workers=tp.num_workers,
+        pin_memory=True,
+        persistent_workers=True,
+        batch_size=tp.batch_size,
+        pre_fetch_factor=tp.pre_fetch_factor,
+        config=config
+    )
+    data_module.prepare_data()
+    data_module.setup()
+    return data_module.train_dataloader(), data_module.val_dataloader()
+
+def get_optimizer(model, tp, gp):
     '''Initialises the Hybrid Optimizer with Cosine Scheduler.
 
     Args:
@@ -28,12 +55,28 @@ def get_optimizer(model, tp, gp, epochs):
 
     optimizer = HybridOptim(
         model=model,
-        OptimHParams=OptimHParams_FT, 
-        total_steps= (47509085 + 8026886)*epochs // (tp.grad_batches * gp.cwl)
+        OptimHParams=OptimHParams,
+        total_steps=5_000_000_000 // (tp.grad_batches * gp.cwl)
     )
     return optimizer
 
-def finetune(Model,epochs=2):
+def load_optimizer(optimizer, optimizer_checkpoint_path):
+    '''Loads the optimizer state from a checkpoint file.
+
+    Args:
+        optimizer (HybridOptim): The optimizer instance to load the state into.
+        optimizer_checkpoint_path (str): Path to the optimizer checkpoint file.
+    '''
+    checkpoint = torch.load_state_dict(optimizer_checkpoint_path, map_location=device)["optimizer_state_dict"]
+    optimizer.load_state_dict(checkpoint)
+    return optimizer
+
+def train(Model):
+    '''Main training loop for the GPT model.
+    This function initializes the model, optimizer, and data loaders, 
+    and then iterates through the training data to perform optimization steps. 
+    It also periodically evaluates the model on the validation set and prints training and validation loss.
+    '''
     tp=TrainParams()
     gp=Config()
 
@@ -41,15 +84,16 @@ def finetune(Model,epochs=2):
     model=torch.compile(model).to(device)
 
     optimizer=get_optimizer(model,tp,gp)
+    optimizer=load_optimizer(optimizer,"optimizer_checkpoint.pt")
     loss_fn=nn.CrossEntropyLoss()
 
     val_dataloader=None
 
-    with tqdm(total=2_600_000_000, desc="Training", unit="Tokens") as pbar:
+    with tqdm(total=5_000_000_000, desc="Training", unit="Tokens") as pbar:
         opt_steps=torch.load("optimizer_checkpoint.pt",map_location=device)["step"]
         batch_count=0
-        for i in range(1):
-            file_path=...
+        for i in range(0,25):
+            file_path=f"Pre_train_data/climbmix_{i+1}.npy"
             if val_dataloader is None:
                 train_dataloader,val_dataloader=get_dataloaders(gp, tp, file_path)
             else:
@@ -128,9 +172,12 @@ def finetune(Model,epochs=2):
                         f.write("\n")
                     model.train()
 
-        torch.save(model.state_dict(),"final_model.pt")   
-            
-if __name__ == "__main__":
+        torch.save(model.state_dict(),"final_model.pt")     
+        
+
+if __name__=="__main__":
+    # model=GPT(Config())
+
     state_dict=torch.load("model_checkpoint.pt",map_location=device)
 
     new_state_dict={}
@@ -144,5 +191,16 @@ if __name__ == "__main__":
     model.load_state_dict(new_state_dict)
 
     summary(model,input_size=(1,Config().cwl),dtypes=[torch.long])
+    train(model)
 
-    finetune(model, epochs=2)
+
+
+
+
+
+
+
+
+
+
+    
