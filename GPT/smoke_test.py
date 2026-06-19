@@ -1,5 +1,5 @@
-from Model_Classes import GPT
-from HyperParam_Classes import Config,OptimHParams
+from Model import GPT
+from Hyperparams import Config,OptimHParams
 from torchinfo import summary
 import torch
 from Optimizer import HybridOptim
