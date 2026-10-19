@@ -10,7 +10,7 @@ echo "Uninstalling existing torch packages..."
 pip uninstall -y torch torchvision torchaudio 
 
 echo "Installing torch packages with specific CUDA version..."
-pip install torch==2.11.00 torchvision torchaudio --index-url https://download.pytorch.org/whl/$CUDA_VERSION
+pip install torch==2.11.00 --index-url https://download.pytorch.org/whl/$CUDA_VERSION
 echo "Torch packages installed successfully."
 
 #------------------------------------------------------------------------------------#
