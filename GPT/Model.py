@@ -111,22 +111,6 @@ class MultiHeadAttention(nn.Module):
     - RMSNorm normalization before attention computation
     - Scaled Dot Product Attention with causal masking
     - XSA (Cross-Attention Self-Alignment) mechanism for improved attention quality
-
-        Architecture flow:
-    1. Input projection via qkv linear layer
-    2. Per-head RMSNorm on q and k projections
-    3. RoPE application for positional encoding
-    4. Scaled dot product attention with causal mask
-    5. XSA normalization to align attention outputs
-    6. VE (Vector Enhancement) mechanism adds learned embeddings to v based on input tokens
-    7. Output projection back to d_model dimension
-
-    Key features:
-    - Uses interleaved RMSNorm per head (head_size, not d_model)
-    - Applies RoPE to both query and key tensors
-    - Implements causal masking for autoregressive generation
-    - XSA mechanism normalizes output by aligned vector sum
-    - VE mechanism applies enhancement using value_embed_rank dimension
 '''
     def __init__(self,config,layer_idx):
         '''
@@ -234,19 +218,6 @@ class Mlp(nn.Module):
     1. Up projection from d_model to hidden dimension
     2. ReLU activation followed by element-wise squaring
     3. Down projection back to d_model dimension
-
-    The squaring operation creates a non-linear transformation that emphasizes
-    larger values while maintaining the ability to model complex relationships.
-    This design differs from standard GELU/ReLU activations and provides
-    a custom non-linearity for this architecture.
-
-    Architecture flow:
-    x -> up_proj (d_model -> hidden) -> ReLU -> square -> down_proj (hidden -> d_model)
-
-    Key features:
-    - Uses element-wise squaring after ReLU for custom non-linearity
-    - No bias terms in projection layers for parameter efficiency
-    - Hidden dimension controls model capacity
     '''
     def __init__(self,config):
         ''' 
@@ -291,27 +262,7 @@ class Block(nn.Module):
 
     This block applies two sequential sub-layers with residual connections:
     1. Pre-Norm attention sub-layer with RMSNorm
-    2. Pre-Norm MLP sub-layer with RMSNorm
-
-    Both sub-layer outputs are scaled by a factor and added to the input
-    via residual connections, creating a residual stream that propagates
-    information through the network depth.
-
-    Architecture flow:
-    x -> PreNorm1 -> Attention -> scale -> residual add
-    x -> PreNorm2 -> MLP -> scale -> residual add
-
-    VE Flow:
-    - Passes `ve` through attention mechanism with gated residual enhancement
-    - VE output is propagated through the block for subsequent layers
-
-    Key features:
-    - Uses pre-normalization (RMSNorm before each sub-layer) for stable training
-    - Applies uniform scaling factor across both sub-layers
-    - Scaling factor depends on model depth (num_layers) for gradient flow
-    - Residual connections help mitigate vanishing gradients in deep networks
-    - VE mechanism enables dynamic residual enhancement across transformer blocks
-    '''
+    2. Pre-Norm MLP sub-layer with RMSNorm'''
     def __init__(self,config,layer_idx):
         '''
         Initialising the Block.
@@ -362,20 +313,6 @@ class GPT(nn.Module):
     - Stacked transformer blocks with residual connections
     - Final layer normalization
     - Language modeling head with weight tying
-
-        Architecture flow:
-    Input tokens -> Embedding -> [Transformer Blocks] -> Final Norm -> LM Head -> Output logits
-
-    VE Flow:
-    - Passes `ve` through each transformer block with gated residual enhancement
-    - VE is propagated through the entire model for consistent residual modulation
-
-    Key features:
-    - Weight tying: LM head shares weights with embedding for parameter efficiency
-    - Pre-normalization at each block for stable training
-    - Causal masking in attention for autoregressive generation
-    - Standard initialization scheme (normal for linear, ones for RMSNorm)
-    - VE mechanism enables dynamic residual modulation across all transformer blocks
     '''
     def __init__(self,config):
         '''
